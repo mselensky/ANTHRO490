@@ -1,1 +1,163 @@
-echo "hello world"
+<!DOCTYPE html>
+<html >
+
+<head>
+
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>ANTHRO 490 Final Project</title>
+  <meta name="description" content="This book details the workflow I followed in my final project for ANTHRO 490.">
+  <meta name="generator" content="bookdown  and GitBook 2.6.7">
+
+  <meta property="og:title" content="ANTHRO 490 Final Project" />
+  <meta property="og:type" content="book" />
+  
+  
+  <meta property="og:description" content="This book details the workflow I followed in my final project for ANTHRO 490." />
+  <meta name="github-repo" content="rstudio/bookdown-demo" />
+
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="ANTHRO 490 Final Project" />
+  
+  <meta name="twitter:description" content="This book details the workflow I followed in my final project for ANTHRO 490." />
+  
+
+<meta name="author" content="Matt Selensky">
+
+
+<meta name="date" content="2019-03-19">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  
+  
+
+<link rel="next" href="silva-based-classification-with-filtering.html">
+<script src="libs/jquery-2.2.3/jquery.min.js"></script>
+<link href="libs/gitbook-2.6.7/css/style.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-table.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-bookdown.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-highlight.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-search.css" rel="stylesheet" />
+<link href="libs/gitbook-2.6.7/css/plugin-fontsettings.css" rel="stylesheet" />
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="style.css" type="text/css" />
+</head>
+
+<body>
+
+
+
+  <div class="book without-animation with-summary font-size-2 font-family-1" data-basepath=".">
+
+    <div class="book-summary">
+      <nav role="navigation">
+
+<ul class="summary">
+<li><a href="./">A Minimal Book Example</a></li>
+
+<li class="divider"></li>
+<li class="chapter" data-level="1" data-path="index.html"><a href="index.html"><i class="fa fa-check"></i><b>1</b> Project context and overview</a></li>
+<li class="chapter" data-level="2" data-path="silva-based-classification-with-filtering.html"><a href="silva-based-classification-with-filtering.html"><i class="fa fa-check"></i><b>2</b> Silva-based classification with filtering</a></li>
+<li class="chapter" data-level="3" data-path="silva-based-classification-without-filtering.html"><a href="silva-based-classification-without-filtering.html"><i class="fa fa-check"></i><b>3</b> Silva-based classification without filtering</a></li>
+<li class="chapter" data-level="4" data-path="methods.html"><a href="methods.html"><i class="fa fa-check"></i><b>4</b> Methods</a></li>
+<li class="chapter" data-level="5" data-path="results.html"><a href="results.html"><i class="fa fa-check"></i><b>5</b> Results</a></li>
+<li class="chapter" data-level="6" data-path="final-words.html"><a href="final-words.html"><i class="fa fa-check"></i><b>6</b> Final Words</a></li>
+<li class="chapter" data-level="" data-path="references.html"><a href="references.html"><i class="fa fa-check"></i>References</a></li>
+<li class="divider"></li>
+<li><a href="https://github.com/rstudio/bookdown" target="blank">Published with bookdown</a></li>
+
+</ul>
+
+      </nav>
+    </div>
+
+    <div class="book-body">
+      <div class="body-inner">
+        <div class="book-header" role="navigation">
+          <h1>
+            <i class="fa fa-circle-o-notch fa-spin"></i><a href="./">ANTHRO 490 Final Project</a>
+          </h1>
+        </div>
+
+        <div class="page-wrapper" tabindex="-1" role="main">
+          <div class="page-inner">
+
+            <section class="normal" id="section-">
+<div id="header">
+<h1 class="title">ANTHRO 490 Final Project</h1>
+<p class="author"><em>Matt Selensky</em></p>
+<p class="date"><em>19 March 2019</em></p>
+</div>
+<div id="project-context-and-overview" class="section level1">
+<h1><span class="header-section-number">Chapter 1</span> Project context and overview</h1>
+<p>For my final project, I am using FASTA data provided by <a href="https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5310854/">Lavoie et al. (2017)</a>, found <a href="https://zenodo.org/record/58072">here</a>. <br></p>
+<p>These are 454 data of cave and surface soil microbial communities from the lava tubes of Lava Beds National monument, California (LABE). My initial idea for this project was to look at whether within-cave microbial community composition changes with geochemical parameters, such as [NO3-] in cave fluids. However, I quickly found out the authors’ sampling methods did not allow me to directly compare those parameters to 16S data, since most 16S samples do not have corresponding geochemical data. The only geochemical data that was analyzed was from a water sample or two from each cave. Since multiple 16S samples per cave were taken, it is essentially useless to try to extrapolate how geochemistry influences community composition. <br></p>
+<p>Lavoie et al. (2017) used the greengenes database for their analyses, which is not ideal for examining environmental microbial communities. Here, I perform a Qiime2-based analysis of the authors’ data. I am instead using the latest silva database (132.99), with the goal of determining whether my conclusions about within- and between-cave microbial diversity are similar to the those of the initial study. <br></p>
+<p>First, I performed 16S analyses using the latest Silva database while including chimera- and abundance-filtering methods see Chapter 2. I then repeated this workflow, omitting the filtering steps. Lavoie et al. apparently did filter their data, but they did not give excellent descriptions of how. The “unfiltered” workflow can be found in Chapter 3. Finally, I used the GreenGenes database for taxonomy without filtering, which is theoretically a similar approach used by Lavoie et al (see Chapter 4 for workflow). An overview and explanation of my results may be found in Chapter 5. <br></p>
+
+</div>
+            </section>
+
+          </div>
+        </div>
+      </div>
+
+<a href="silva-based-classification-with-filtering.html" class="navigation navigation-next navigation-unique" aria-label="Next page"><i class="fa fa-angle-right"></i></a>
+    </div>
+  </div>
+<script src="libs/gitbook-2.6.7/js/app.min.js"></script>
+<script src="libs/gitbook-2.6.7/js/lunr.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-search.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-sharing.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-fontsettings.js"></script>
+<script src="libs/gitbook-2.6.7/js/plugin-bookdown.js"></script>
+<script src="libs/gitbook-2.6.7/js/jquery.highlight.js"></script>
+<script>
+gitbook.require(["gitbook"], function(gitbook) {
+gitbook.start({
+"sharing": {
+"github": false,
+"facebook": true,
+"twitter": true,
+"google": false,
+"linkedin": false,
+"weibo": false,
+"instapaper": false,
+"vk": false,
+"all": ["facebook", "google", "twitter", "linkedin", "weibo", "instapaper"]
+},
+"fontsettings": {
+"theme": "white",
+"family": "sans",
+"size": 2
+},
+"edit": {
+"link": "https://github.com/rstudio/bookdown-demo/edit/master/index.Rmd",
+"text": "Edit"
+},
+"history": {
+"link": null,
+"text": null
+},
+"download": ["bookdown-demo.pdf", "bookdown-demo.epub"],
+"toc": {
+"collapse": "subsection"
+}
+});
+});
+</script>
+
+</body>
+
+</html>
