@@ -1,0 +1,383 @@
+# Silva-based classification with filtering
+
+##Import data: <br>
+I must convert the provided FASTA file into .qza format, which is readable by Qiime2.
+```{bash eval=FALSE}
+qiime tools import 
+	--input-path LABEseqs.fna 
+	--output-path LABEseqs.qza 
+	--type 'SampleData[Sequences]'
+```
+
+##Dereplicate sequences:
+```{bash eval=FALSE}
+qiime vsearch dereplicate-sequences 
+	--i-sequences LABEseqs.qza 
+	--o-dereplicated-table LABEtable.qza 
+	--o-dereplicated-sequences rep-LABEseqs.qza
+```
+
+##De novo clustering:
+```{bash eval=FALSE}
+qiime vsearch cluster-features-de-novo 
+	--i-table LABEtable.qza 
+	--i-sequences rep-LABEseqs.qza 
+	--p-perc-identity 0.97 
+	--o-clustered-table LABEtable-dn-97.qza 
+	--o-clustered-sequences rep-LABEseqs-dn-97.qza
+```
+Since I am using 454 data, I used a cutoff of 97% to avoid PCR-induced error in my clustering algorithm. <br>
+
+##Chimera checking and removal: <br>
+
+Check for chimeras:
+```{bash eval=FALSE}
+qiime vsearch uchime-denovo 
+	--i-table LABEtable-dn-97.qza 
+	--i-sequences rep-LABEseqs-dn-97.qza 
+	--output-dir uchime-dn-out
+```
+Visualize the resultant chimera check output:
+```{bash eval=FALSE}
+qiime metadata tabulate 
+	--m-input-file uchime-dn-out/stats.qza 
+	--o-visualization uchime-dn-out/stats.qzv
+```
+Number of samples: 30 <br>
+Number of features: 103,356 (sequences) <br>
+Total frequency: 127,603 (reads) <br>
+<br>
+
+Filter out chimeras and borderline chimeras:
+```{bash eval=FALSE}
+qiime feature-table filter-features 
+	--i-table LABEtable-dn-97.qza 
+	--m-metadata-file uchime-dn-out/nonchimeras.qza 
+	--o-filtered-table uchime-dn-out/LABEtable-nonchimeric-wo-borderline.qza
+    
+qiime feature-table filter-seqs 
+	--i-data rep-LABEseqs-dn-97.qza 
+	--m-metadata-file uchime-dn-out/nonchimeras.qza 
+	--o-filtered-data uchime-dn-out/LABErep-seqs-nonchimeric-wo-borderline.qza
+```
+Visualize the resultant chimera-free output:
+```{bash eval=FALSE}
+qiime feature-table summarize 
+	--i-table uchime-dn-out/LABEtable-nonchimeric-wo-borderline.qza 
+	--o-visualization uchime-dn-out/table-nonchimeric-wo-borderline.qzv
+```
+Number of samples: 30 <br>
+Number of features: 13,389 (OTUs) <br>
+Total frequency: 114,300 (reads) <br>
+*NOTE - Lavoie et al. 2017 report 140,848 OTUs.* <br>
+
+<br>
+
+##Abundance filtering
+```{bash eval=FALSE}
+
+```
+
+##Taxonomy assignment using Silva <br>
+Since I am analyzing environmental data, I used the Silva database (132.99). I used the sklearn classification algorithm.
+```{bash eval=FALSE}
+qiime feature-classifier classify-sklearn 
+	--i-classifier /projects/e30740/qiime2_classifiers/silva-132-99-nb-classifier.qza 
+	--i-reads /projects/e30740/mselensky/FinalProject/uchime-dn-out/LABErep-seqs-nonchimeric-wo-borderline.qza 
+	--o-classification /projects/e30740/mselensky/taxonomy/taxonomy.qza
+```
+I was not able to visualize the resultant taxonomy.qza file as a table using metadata tabulate. I had to employ the following workaround, which allowed me to visualize my taxonomy information in tabular form:
+```{bash eval=FALSE}
+qiime tools export 
+    --input-path /projects/e30740/mselensky/FinalProject/taxonomy/taxonomy.qza 
+    --output-path /projects/e30740/mselensky/FinalProject/taxonomy/taxonomy-with-spaces
+qiime metadata tabulate 
+    --m-input-file /projects/e30740/mselensky/FinalProject/taxonomy/taxonomy-with-spaces/taxonomy.tsv 
+    --o-visualization /projects/e30740/mselensky/FinalProject/taxonomy/taxonomy-as-metadata.qzv
+qiime tools export 
+    --input-path /projects/e30740/mselensky/FinalProject/taxonomy/taxonomy-as-metadata.qzv 
+    --output-path /projects/e30740/mselensky/FinalProject/taxonomy/taxonomy-as-metadata
+qiime tools import 
+    --type 'FeatureData[Taxonomy]' 
+    --input-path /projects/e30740/mselensky/FinalProject/taxonomy/taxonomy-as-metadata/metadata.tsv 
+    --output-path /projects/e30740/mselensky/FinalProject/taxonomy/taxonomy-without-spaces.qza
+
+qiime metadata tabulate 
+    --m-input-file /projects/e30740/mselensky/FinalProject/taxonomy/taxonomy-without-spaces.qza 
+    --o-visualization /projects/e30740/mselensky/FinalProject/taxonomy/taxonomy-without-spaces.qzv
+```
+
+##Taxa barplot <br>
+This yielded a taxa barplot as an output (before rarefaction):
+```{bash eval=FALSE}
+qiime taxa barplot 
+	--i-table /projects/e30740/mselensky/FinalProject/uchime-dn-out/LABEtable-nonchimeric-wo-borderline.qza
+	--i-taxonomy /projects/e30740/mselensky/FinalProject/taxonomy/taxonomy.qza
+	--m-metadata-file /projects/e30740/mselensky/FinalProject/LABEmetadata.txt
+	--o-visualization /projects/e30740/mselensky/FinalProject/taxonomy/LABE_taxa_barplot.qzv
+```
+
+##Phylogenetic tree
+```{bash eval=FALSE}
+qiime phylogeny align-to-tree-mafft-fasttree
+	--i-sequences /projects/e30740/mselensky/FinalProject/uchime-dn-out/LABErep-seqs-nonchimeric-wo-borderline.qza
+	--o-alignment /projects/e30740/mselensky/FinalProject/Phylogeny/LABErep-seqs-nonchimeric-wo-borderline_aligned
+	--o-masked-alignment /projects/e30740/mselensky/FinalProject/Phylogeny/LABErep-seqs-nonchimeric-wo-borderline_masked_aligned
+	--o-tree /projects/e30740/mselensky/FinalProject/Phylogeny/LABEtree
+	--o-rooted-tree /projects/e30740/mselensky/FinalProject/Phylogeny/LABEtree_rooted
+	--output-dir /projects/e30740/mselensky/FinalProject/Phylogeny
+```
+
+##Core diversity metrics <br>
+First, I made an alpha rarefaction plot to determine sampling depth:
+
+```{bash eval=FALSE}
+qiime diversity alpha-rarefaction
+	--i-table /projects/e30740/mselensky/FinalProject/uchime-dn-out/LABEtable-nonchimeric-wo-borderline.qza
+	--p-max-depth 5000
+	--p-min-depth 1
+	--p-steps 10
+	--p-iterations 10
+	--o-visualization /projects/e30740/mselensky/FinalProject/LABE_alpha_rarefied_table
+```
+When sampling depth = 2000, <br>
+* Retained 58,000 (50.74%) sequences in 29 (96.67%) samples at the specifed sampling depth. <br>
+<br>
+Using the phylogenetic tree from step 8, I then measured diversity core metrics on my rarefied data with a sampling depth of 2000:
+```{bash eval=FALSE}
+qiime diversity core-metrics-phylogenetic
+--i-phylogeny /projects/e30740/mselensky/FinalProject/Phylogeny/LABEtree_rooted.qza
+--i-table /projects/e30740/mselensky/FinalProject/uchime-dn-out/LABEtable-nonchimeric-wo-borderline.qza
+--p-sampling-depth 2000
+--m-metadata-file /projects/e30740/mselensky/FinalProject/LABEmetadata_all_samples.txt
+--output-dir /projects/e30740/mselensky/FinalProject/CoreMetricsResults
+```
+**Outputs give the following information:** <br>
+
+ALPHA DIVERSITY CORE METRICS: <br>
+
+*Shannon's diversity index* <br> 
+* A quantitative measure of community richness <br>
+
+*Observed OTUs* <br> 
+* A qualitative measure of community richness <br>
+
+*Faith's Phylogenetic Diversity* <br> 
+* A qualitiative measure of community richness that incorporates phylogenetic relationships between the features <br>
+
+*Evenness (or Pielou's Evenness)* <br>
+* A measure of community evenness <br>
+
+-----------
+
+BETA DIVERSITY CORE METRICS: <br>
+
+*Jaccard distance* <br>
+* A qualitative measure of community dissimilarity <br>
+
+*Bray-Curtis* <br>
+* A quantitative measure of community dissimilarity <br>
+
+*Unweighted UniFrac distance* <br>
+* A qualitative measure of community dissimilarity that incorporates phylogenetic relationships between features <br>
+
+*Weighted UniFrac distance* <br>
+* A quantitative measure of community dissimilarity that incorporates phylogenetic relationships between features
+
+##Alpha diversity significance
+
+```{bash eval=FALSE}
+#Faith's Phylogenetic Diversity
+qiime diversity alpha-group-significance
+    --i-alpha-diversity /projects/e30740/mselensky/FinalProject/CoreMetricsResults/faith_pd_vector.qza
+    --m-metadata-file /projects/e30740/mselensky/FinalProject/LABEmetadata_all_samples.txt
+    --o-visualization /projects/e30740/mselensky/FinalProject/CoreMetricsResults/faith-pd-group-significance.qzv
+
+# Shannon
+qiime diversity alpha-group-significance
+    --i-alpha-diversity /projects/e30740/mselensky/FinalProject/CoreMetricsResults/shannon_vector.qza
+    --m-metadata-file /projects/e30740/mselensky/FinalProject/LABEmetadata_all_samples.txt
+    --o-visualization /projects/e30740/mselensky/FinalProject/CoreMetricsResults/shannon-group-significance.qzv
+
+# Pielou's evenness
+qiime diversity alpha-group-significance
+    --i-alpha-diversity /projects/e30740/mselensky/FinalProject/CoreMetricsResults/evenness_vector.qza
+    --m-metadata-file /projects/e30740/mselensky/FinalProject/LABEmetadata_all_samples.txt
+    --o-visualization /projects/e30740/mselensky/FinalProject/CoreMetricsResults/evenness-group-significance.qzv
+```
+I will use Shannon for downstream processes. It had the lowest p-value for all variables. <br>
+
+Visualize alpha diversity correlation:
+```{bash eval=FALSE}
+qiime diversity alpha-correlation
+	--i-alpha-diversity /projects/e30740/mselensky/FinalProject/CoreMetricsResults/shannon_vector.qza
+	--m-metadata-file /projects/e30740/mselensky/FinalProject/LABEmetadata_all_samples.txt
+	--o-visualization /projects/e30740/mselensky/FinalProject/CoreMetricsResults/shannon-alpha-correlation.qzv 
+```
+
+##Beta diversity significance 
+Visualizations for UniFrac (weighted & unweighted), Jaccard, and Bray Curtis were provided by ```qiime diversity core-metrics-phylogenetic```.<br>
+
+I am interested in comparing the signficance of "Class" among my samples. "Class" provides information whether a sample came from a yellow/white/tan microbial mat, or from the overlying surface soil of a cave. <br>
+
+```{bash eval=FALSE}
+qiime diversity beta-group-significance
+--i-distance-matrix /projects/e30740/mselensky/FinalProject/CoreMetricsResults/unweighted_unifrac_distance_matrix.qza
+--m-metadata-file /projects/e30740/mselensky/FinalProject/LABEmetadata_all_samples.txt
+--m-metadata-column Class
+--p-pairwise
+--o-visualization /projects/e30740/mselensky/FinalProject/CoreMetricsResults/unweighted-unifrac-Class-significance.qzv
+```
+Make PCoA from distance matrix:
+```{bash eval=FALSE}
+qiime diversity pcoa
+--i-distance-matrix /projects/e30740/mselensky/FinalProject/CoreMetricsResults/bray_curtis_distance_matrix.qza
+--o-pcoa /projects/e30740/mselensky/FinalProject/CoreMetricsResults/bray_curtis_pcoa
+singularity exec -B /projects/e30740 -B /projects/e30740/mselensky/FinalProject /projects/e30740/qiime2-core2018-8.simg qiime diversity pcoa --i-distance-matrix /projects/e30740/mselensky/FinalProject/CoreMetricsResults/bray_curtis_distance_matrix.qza --o-pcoa /projects/e30740/mselensky/FinalProject/CoreMetricsResults/bray_curtis_pcoa
+```
+Plot Emperor PCoA for Distance from cave entrance.<br>
+```{bash eval=FALSE}
+qiime emperor plot 
+  --i-pcoa /projects/e30740/mselensky/FinalProject/CoreMetricsResults/bray_curtis_pcoa.qza
+  --m-metadata-file /projects/e30740/mselensky/FinalProject/LABEmetadata_no_soils.txt
+  --p-custom-axes Distance_from_entrance
+  --o-visualization /projects/e30740/mselensky/FinalProject/Bray-Curtis-emperor-Distance_from_entrance.qzv
+```
+
+##Importing data for R-based analyses <br>
+I got a little sick of using Qiime on Quest, so I decided to do all further analyses in R. <br>
+
+I needed to export my OTU table as a .tsv for downstream R analyses:
+```{bash eval=FALSE}
+qiime tools export 
+  --input-path /projects/e30740/mselensky/FinalProject/uchime-dn-out/LABEtable-nonchimeric-wo-borderline.qza
+  --output-path /projects/e30740/mselensky/FinalProject/Filtered
+
+qiime tools export 
+  --input-path /projects/e30740/mselensky/FinalProject/taxonomy/taxonomy.qza
+  --output-path /projects/e30740/mselensky/FinalProject/taxonomy
+
+biom add-metadata 
+  -i /projects/e30740/mselensky/FinalProject/Filtered/feature-table.biom -o /projects/e30740/mselensky/FinalProject/Filtered/feature-table_with_taxa.biom 
+  --observation-metadata-fp /projects/e30740/mselensky/FinalProject/taxonomy/taxonomy.tsv
+  --sc-separated taxonomy --observation-header OTUID,taxonomy
+
+biom convert 
+  -i /projects/e30740/mselensky/FinalProject/Filtered/feature-table_with_taxa.biom 
+  -o /projects/e30740/mselensky/FinalProject/Filtered/feature-table_with_taxa.txt 
+  --to-tsv --header-key taxonomy
+```
+In python, I ran:
+```{p eval=FALSE}
+summarize_taxa.py 
+  -i feature-table_with_taxa.biom 
+  -a 
+  -o feature-table_with_taxa_abs_summary/ -L 1,2,3,4,5,6,7   
+  --suppress_biom_table_output
+```
+This provided me with 7 ```feature-table_with_taxa_L(x).txt``` files, where (x) = taxonomic level of classification. After doing this, I realized that view.qiime2.org allows you to directly convert .qza files to .csv...oops!
+
+##NMDS plots in R - family-level taxonomy <br>
+```{R eval=TRUE, echo=FALSE, collapse=TRUE, message=FALSE, include=FALSE}
+library(ggplot2)
+library(vegan)
+library(funrar)
+library(plotly)
+#package_version('plotly')
+
+rm(list=ls())
+
+getwd()
+
+setwd("C:/Users/msele/OneDrive/Documents/Winter2019_Classes/ANTHRO_490/Final_Project/taxonomy")
+
+L5 <- read.delim("feature-table_with_taxa_L5.txt", sep="\t", header = TRUE, row.names = 1, check.names = FALSE)
+L5_metadata <- read.csv("LABEmetadata_all_samples.txt", check.names = FALSE, fileEncoding = "UTF-8-BOM")
+
+is.data.frame(L5)
+L5_transposed <- t(L5)
+
+# Convert L5 (an absolute abundance table) into relative abundance table
+mat = as.matrix(L5_transposed)
+rel_mat = make_relative(mat)
+
+# Make_relative causes rel_mat to be atomic, not recursive. downstream data.frame only works on recursive objects 
+is.recursive(rel_mat)
+is.atomic(rel_mat)
+rel_mat_recursive <- as.data.frame(rel_mat)
+is.recursive(rel_mat_recursive)
+
+grouping_info <- data.frame(row.names = rownames(rel_mat), t(as.data.frame(strsplit(rownames(rel_mat),"\t"))))
+head(grouping_info)
+
+NMDS_L5 <- metaMDS(rel_mat_recursive, distance = "bray", k = 2, try = 20, trymax = 100)
+stressplot(NMDS_L5, pch = 19, cex=0.75, l.col = "tomato", p.col = "skyblue")
+
+info_L5 = data.frame(x=NMDS_L5$point[,2],y=NMDS_L5$point[,1],SampleID = as.factor(grouping_info[,1]))
+
+# Merge metadata file with info_L5, which contains NMDS coordinates
+L5_merged <- merge(info_L5, L5_metadata, by.x = "SampleID", by.y = "SampleID")
+
+```
+Stressplot for Silva-based, filtered, family-level NMDS:
+```{R eval=TRUE, echo=FALSE, collapse=TRUE, message=FALSE}
+# Stress plot
+stressplot(NMDS_L5, pch = 19, cex=0.75, l.col = "tomato", p.col = "skyblue")
+```
+<br>
+NMDS of cave vs surface soil:
+```{R eval=TRUE, echo=FALSE, collapse=TRUE, message=FALSE}
+# Plot NMDS
+p <- ggplot(L5_merged, aes(x, y, label="", color = Type, group = Type, text = paste("Cave: ", Cave))) +
+  geom_point() +
+ # scale_shape_manual(values=c(1:17)) +
+  scale_color_manual(values=c("skyblue", "tomato", "skyblue", "tomato")) +
+  geom_text() +
+  ggtitle("Family-level NMDS using Silva (with Filtering)") +
+  theme(panel.background = element_rect("white")) +
+  stat_ellipse(geom = "path")
+
+
+
+p <- ggplotly(p)
+
+
+p
+```
+<br>
+Family-level NMDS plot:
+```{R eval=TRUE, echo=FALSE, collapse=TRUE, message=FALSE}
+# Plot NMDS
+p <- ggplot(L5_merged, aes(x, y, label="", color = Class, group = Mat_color, text = paste("Cave: ", Cave))) +
+  geom_point() +
+ # scale_shape_manual(values=c(1:17)) +
+  scale_color_manual(values=c("darkgoldenrod4", "tan", "grey88", "gold")) +
+  geom_text() +
+  ggtitle("Family-level NMDS using Silva (with Filtering)") +
+  theme(panel.background = element_rect("white"))
+ # stat_ellipse(geom = "path")
+
+
+
+p <- ggplotly(p)
+
+
+p
+```
+<br>
+NMDS plot with ellipses indicating 95% confidence level at which ellipses were drawn:
+```{R eval=TRUE, echo=FALSE, collapse=TRUE, message=FALSE}
+# Plot NMDS
+p <- ggplot(L5_merged, aes(x, y, label="", color = Class, group = Mat_color, text = paste("Cave: ", Cave))) +
+  geom_point() +
+ # scale_shape_manual(values=c(1:17)) +
+  scale_color_manual(values=c("darkgoldenrod4", "tan", "grey88", "gold")) +
+  geom_text() +
+  ggtitle("Family-level NMDS using Silva (with Filtering)") +
+  theme(panel.background = element_rect("white")) +
+  stat_ellipse(geom = "path")
+
+p <- ggplotly(p)
+
+p
+```

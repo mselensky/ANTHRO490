@@ -1,0 +1,23 @@
+--- 
+title: "ANTHRO 490 Final Project"
+author: "Matt Selensky"
+date: "19 March 2019"
+site: bookdown::bookdown_site
+output: bookdown::gitbook
+documentclass: book
+bibliography: [book.bib, packages.bib]
+biblio-style: apalike
+link-citations: yes
+github-repo: rstudio/bookdown-demo
+description: "This book details the workflow I followed in my final project for ANTHRO 490."
+---
+
+# Project context and overview
+
+For my final project, I am using FASTA data provided by [Lavoie et al. (2017)](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5310854/), found [here](https://zenodo.org/record/58072). <br>
+
+These are 454 data of cave and surface soil microbial communities from the lava tubes of Lava Beds National monument, California (LABE). My initial idea for this project was to look at whether within-cave microbial community composition changes with geochemical parameters, such as [NO3-] in cave fluids. However, I quickly found out the authors' sampling methods did not allow me to directly compare those parameters to 16S data, since most 16S samples do not have corresponding geochemical data. The only geochemical data that was analyzed was from a water sample or two from each cave. Since multiple 16S samples per cave were taken, it is essentially useless to try to extrapolate how geochemistry influences community composition. <br>
+
+Lavoie et al. (2017) used the greengenes database for their analyses, which is not ideal for examining environmental microbial communities. Here, I perform a Qiime2-based analysis of the authors' data. I am instead using the latest silva database (132.99), with the goal of determining whether my conclusions about within- and between-cave microbial diversity are similar to the those of the initial study. <br>
+
+First, I performed 16S analyses using the latest Silva database while including chimera- and abundance-filtering methods see Chapter 2. I then repeated this workflow, omitting the filtering steps. Lavoie et al. apparently did filter their data, but they did not give excellent descriptions of how. The "unfiltered" workflow can be found in Chapter 3. Finally, I used the GreenGenes database for taxonomy without filtering, which is theoretically a similar approach used by Lavoie et al (see Chapter 4 for workflow). An overview and explanation of my results may be found in Chapter 5. <br>
