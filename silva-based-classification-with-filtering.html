@@ -205,7 +205,15 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 </div>
 <div id="abundance-filtering" class="section level2">
 <h2><span class="header-section-number">2.5</span> Abundance filtering</h2>
-<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"></code></pre></div>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="ex">qiime</span> feature-table filter-samples 
+    <span class="ex">--i-table</span> /projects/e30740/mselensky/FinalProject/uchime-dn-out/LABEtable-nonchimeric-wo-borderline.qza 
+    <span class="ex">--p-min-frequency</span> 100 
+    <span class="ex">--o-filtered-table</span> /projects/e30740/mselensky/FinalProject/uchime-dn-out/sample-frequency100-filtered-LABEtable-dn-97.qza
+
+<span class="ex">qiime</span> feature-table filter-seqs 
+    <span class="ex">--i-data</span> /projects/e30740/mselensky/FinalProject/uchime-dn-out/LABErep-seqs-nonchimeric-wo-borderline.qza 
+    <span class="ex">--p-min-frequency</span> 100 
+    <span class="ex">--o-filtered-data</span> uchime-dn-out/LABErep-seqs-nonchimeric-wo-borderline.qza</code></pre></div>
 </div>
 <div id="taxonomy-assignment-using-silva" class="section level2">
 <h2><span class="header-section-number">2.6</span> Taxonomy assignment using Silva <br></h2>
